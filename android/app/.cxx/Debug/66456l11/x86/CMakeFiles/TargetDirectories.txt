@@ -1,0 +1,2 @@
+/Users/macbook/Documents/FLUTTER PROJECTS final/Nplflix-Mobile-App-main/android/app/.cxx/Debug/66456l11/x86/CMakeFiles/rebuild_cache.dir
+/Users/macbook/Documents/FLUTTER PROJECTS final/Nplflix-Mobile-App-main/android/app/.cxx/Debug/66456l11/x86/CMakeFiles/edit_cache.dir

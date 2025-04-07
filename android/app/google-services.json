@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "174330763623",
+    "project_id": "nplflix",
+    "storage_bucket": "nplflix.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:174330763623:android:70d8b9bf6419c0e366f7c2",
+        "android_client_info": {
+          "package_name": "com.example.npflix"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDuch4sNOhrCSt6P5BWjKFm1bxZkPf_Law"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
