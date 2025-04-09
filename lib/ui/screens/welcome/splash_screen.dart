@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:npflix/routes/index.dart';
+import 'package:npflix/services/applinkDeeplinks_service.dart';
 import 'package:npflix/utils/helper_methods.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
@@ -34,6 +35,9 @@ class _SplashScreenState extends State<SplashScreen> {
     //   });
     //   playVideo();
     // });
+     // Initialize deep links after the widget is built
+    // Initialize deep links but don't process them yet
+   
     playVideo();
   }
 

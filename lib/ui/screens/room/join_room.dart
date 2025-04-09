@@ -8,7 +8,8 @@ class JoinRoom extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
-        child: TextButton(onPressed: () {}, child: const Text("JOIN ROOM")),
+        child: TextButton(
+            onPressed: () {}, child: Text("JOIN ROOM +\n ${map["roomId"]}")),
       ),
     );
   }

@@ -33,6 +33,6 @@ const String adPlayer = "/AdPlayer";
 const String roomPlayer = "/RoomPlayer";
 const String roomDetails = "/RoomDetails";
 const String roomList = "/RoomList";
-const String joinRoom = "/JoinRoom";
+const String joinRoom = "/room";
 
 
