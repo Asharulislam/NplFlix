@@ -33,6 +33,7 @@ import 'package:npflix/ui/screens/room/create_room.dart';
 import 'package:npflix/ui/screens/movie/downloadPlayerScreen.dart';
 import 'package:npflix/ui/screens/movie/movie_details.dart';
 import 'package:npflix/ui/screens/movie/movie_details_tv.dart';
+import 'package:npflix/ui/screens/room/join_room.dart';
 import 'package:npflix/ui/screens/room/room_details.dart';
 import 'package:npflix/ui/screens/room/room_player.dart';
 import 'package:npflix/ui/screens/movie/video_player_page.dart';
@@ -228,6 +229,13 @@ class MyRouter {
         return MaterialPageRoute(
           builder: (context) =>
               getRouterWithScaleFactor(context,  CreateRoom(map: args,)),
+          settings: RouteSettings(arguments: settings.arguments),
+        );
+        case joinRoom:
+        final args = settings.arguments as Map;
+        return MaterialPageRoute(
+          builder: (context) =>
+              getRouterWithScaleFactor(context,  JoinRoom(map: args,)),
           settings: RouteSettings(arguments: settings.arguments),
         );
       case nplflixVideoPlayer:
