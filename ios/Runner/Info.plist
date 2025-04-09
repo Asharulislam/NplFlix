@@ -8,6 +8,13 @@
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
 	<string>Npflix</string>
+
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:nplflix-web-v1-3.bizalpha.ca</string>
+	</array>
+
+
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
