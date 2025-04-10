@@ -60,66 +60,72 @@ class MyRouter {
   }
 
   Route<dynamic> generateRoute(RouteSettings settings) {
-    // Debug what's coming in
-    debugPrint('Router received route: ${settings.name}');
-    debugPrint('Router received arguments: ${settings.arguments}');
+   
+  debugPrint('Router received route: ${settings.name}');
+  debugPrint('Router received arguments: ${settings.arguments}');
 
-    // Extract route name and arguments
-    final name = settings.name;
-    final args = settings.arguments;
+  final name = settings.name;
+  final args = settings.arguments;
 
-    // Special case: Handle the malformed route that includes ROUTE at the end
-    // or any route starting with /room/ or /room
-    if (name != null &&
-        (name.contains('/room') ||
-            name.contains('/room/') ||
-            (name.startsWith('/room') && name.contains('ROUTE')))) {
-      debugPrint('Handling special room URL case: $name');
-
-      // Try to extract the room ID from the route name
-      Map<String, String> roomArgs = {};
-
-      // Check if there's a query parameter in the route name
-      if (name.contains('?id=')) {
-        // Extract the ID between ?id= and the next & or end of string
-        final idStartIndex = name.indexOf('?id=') + 4;
-        int idEndIndex = name.indexOf('&', idStartIndex);
-        if (idEndIndex == -1) {
-          // If no & is found, use the end of the string
-          // but first check if there's ROUTE at the end
-          if (name.contains('ROUTE')) {
-            idEndIndex = name.indexOf('ROUTE', idStartIndex);
-          } else {
-            idEndIndex = name.length;
-          }
-        }
-
-        // Extract the ID
-        if (idEndIndex > idStartIndex) {
-          final roomId = name.substring(idStartIndex, idEndIndex);
-          roomArgs = {'roomId': roomId};
-          debugPrint('Extracted room ID: $roomId');
-        }
+  // Handle room-related routes
+  if (name != null && name.contains('/room')) {
+    debugPrint('Handling room URL case: $name');
+    
+    // Start with empty modifiable map
+    Map<String, String> roomArgs = {};
+    
+    // 1. Add any direct arguments first
+    if (args != null && args is Map) {
+      roomArgs.addAll(Map<String, String>.from(args));
+      debugPrint('Added arguments from direct args: $roomArgs');
+    }
+    
+    // 2. Parse URL for parameters
+    try {
+      final uri = Uri.parse(name);
+      
+      // Create a new modifiable map from query parameters
+      final queryParams = Map<String, String>.from(uri.queryParameters);
+      roomArgs.addAll(queryParams);
+      debugPrint('Added query parameters: $queryParams');
+      
+      // Handle path parameters if no ID found yet
+      if (roomArgs['id'] == null && roomArgs['roomId'] == null && 
+          uri.pathSegments.length > 1) {
+        roomArgs['roomId'] = uri.pathSegments[1];
+        debugPrint('Extracted roomId from path: ${roomArgs['roomId']}');
       }
-
-      // If arguments were provided directly, use those instead
-      if (args != null && args is Map) {
-        roomArgs = Map<String, String>.from(args);
-      }
-
-      // If we have a room ID, proceed to the JoinRoom screen
-      if (roomArgs.isNotEmpty) {
-        final args = settings.arguments as Map;
-        return MaterialPageRoute(
-          builder: (context) => getRouterWithScaleFactor(
-              context,
-              JoinRoom(
-                map: args,
-              )),
-          settings: RouteSettings(arguments: settings.arguments),
-        );
+    } catch (e) {
+      debugPrint('Error parsing URI: $e');
+    }
+    
+    // 3. Special handling for malformed URLs
+    if ((roomArgs['id'] == null && roomArgs['roomId'] == null) && name.endsWith('ROUTE')) {
+      final id = name.split('/').last.replaceAll('ROUTE', '');
+      if (id.isNotEmpty) {
+        roomArgs['roomId'] = id;
+        debugPrint('Extracted roomId from malformed URL: ${roomArgs['roomId']}');
       }
     }
+    
+    // Standardize the ID key (use 'roomId' consistently)
+    if (roomArgs['id'] != null && roomArgs['roomId'] == null) {
+      roomArgs['roomId'] = roomArgs['id'] ?? "-1";
+    }
+    
+    debugPrint('Final room arguments: $roomArgs');
+    
+    // Proceed to JoinRoom if we have an ID
+    if (roomArgs['roomId'] != null) {
+      return MaterialPageRoute(
+        builder: (context) => getRouterWithScaleFactor(
+          context,
+          JoinRoom(map: roomArgs),
+        ),
+        settings: RouteSettings(name: joinRoom, arguments: roomArgs),
+      );
+    }
+  }
 
     switch (settings.name) {
       case splashScreen:
@@ -310,16 +316,16 @@ class MyRouter {
               )),
           settings: RouteSettings(arguments: settings.arguments),
         );
-      case joinRoom:
-        final args = settings.arguments as Map;
-        return MaterialPageRoute(
-          builder: (context) => getRouterWithScaleFactor(
-              context,
-              JoinRoom(
-                map: args,
-              )),
-          settings: RouteSettings(arguments: settings.arguments),
-        );
+      // case joinRoom:
+      //   final args = settings.arguments as Map;
+      //   return MaterialPageRoute(
+      //     builder: (context) => getRouterWithScaleFactor(
+      //         context,
+      //         JoinRoom(
+      //           map: args,
+      //         )),
+      //     settings: RouteSettings(arguments: settings.arguments),
+      //   );
       case nplflixVideoPlayer:
         final args = settings.arguments as Map;
         return MaterialPageRoute(

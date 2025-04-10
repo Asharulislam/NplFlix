@@ -29,12 +29,11 @@ import 'controller/login_controller.dart';
 import 'controller/saveplan_controller.dart';
 
 // In a globals.dart file or similar
-// final GlobalKey<NavigatorState> myNavKey = GlobalKey<NavigatorState>();
+final GlobalKey<NavigatorState> myNavKey = GlobalKey<NavigatorState>();
 
 void main() async {
   
   WidgetsFlutterBinding.ensureInitialized(); 
-  
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
   ]);// Ensure Flutter is ready
@@ -98,7 +97,7 @@ class _MyAppState extends State<MyApp> {
           builder: (context, provider, child) {
             return MaterialApp(
               title: 'NPLFLIX',
-              // navigatorKey: myNavKey,
+              navigatorKey: myNavKey,
               localizationsDelegates: const [
                 AppLocalizations.delegate,
                 GlobalMaterialLocalizations.delegate,
@@ -116,7 +115,7 @@ class _MyAppState extends State<MyApp> {
                     ColorScheme.fromSeed(seedColor: AppColors.btnColor),
                 useMaterial3: true,
               ),
-              initialRoute: welcomeScreen,
+              initialRoute: splashScreen,
               onGenerateRoute: MyRouter().generateRoute, // onGenerateRoute: MyRouter().generateRoute,
             );
           },

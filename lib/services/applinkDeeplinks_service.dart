@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 // Import the navigatorKey from main.dart
-import 'package:npflix/main.dart' show navigatorKey;
+import 'package:npflix/main.dart' show myNavKey, navigatorKey;
 import 'package:npflix/routes/index.dart';
 import 'package:npflix/sources/shared_preferences.dart';
 import 'package:npflix/ui/screens/authentication/login_screen.dart';
@@ -57,22 +57,21 @@ class AppLinksService {
 
         // if (isLoggedIn) {
         //   // In AppLinksService._processDeepLink:
-        //   if (navigatorKey.currentState != null &&
-        //       navigatorKey.currentContext != null) {
+        //   if (myNavKey.currentState != null &&
+        //       myNavKey.currentContext != null) {
         //     // Use pushNamedAndRemoveUntil to navigate while clearing the stack
-        //     navigatorKey.currentState!.pushNamedAndRemoveUntil(
-        //         joinRoom, (route) => false, // Clear all previous routes
+        //     myNavKey.currentState!.pushNamedAndRemoveUntil(
+        //         joinRoom, (route) => true, // Clear all previous routes
         //         arguments: args);
         //   }
         // } 
-        
         // else {
         //   // Navigate to login
-        //   navigatorKey.currentState
-        //       ?.pushNamedAndRemoveUntil(loginScreen, (route) => false);
+        //   myNavKey.currentState
+        //       ?.pushNamedAndRemoveUntil(loginScreen, (route) => true);
 
-        //   if (navigatorKey.currentContext != null) {
-        //     ScaffoldMessenger.of(navigatorKey.currentContext!).showSnackBar(
+        //   if (myNavKey.currentContext != null) {
+        //     ScaffoldMessenger.of(myNavKey.currentContext!).showSnackBar(
         //       const SnackBar(content: Text('Please log in to join the room')),
         //     );
         //   }
