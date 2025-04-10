@@ -29,13 +29,15 @@ import 'controller/login_controller.dart';
 import 'controller/saveplan_controller.dart';
 
 // In a globals.dart file or similar
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+// final GlobalKey<NavigatorState> myNavKey = GlobalKey<NavigatorState>();
 
 void main() async {
+  
+  WidgetsFlutterBinding.ensureInitialized(); 
+  
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
-  ]);
-  WidgetsFlutterBinding.ensureInitialized(); // Ensure Flutter is ready
+  ]);// Ensure Flutter is ready
   // Initialize deep link service
   AppLinksService().initDeepLinks();
   await Firebase.initializeApp(); // Initialize Firebase
@@ -96,7 +98,7 @@ class _MyAppState extends State<MyApp> {
           builder: (context, provider, child) {
             return MaterialApp(
               title: 'NPLFLIX',
-              navigatorKey: navigatorKey,
+              // navigatorKey: myNavKey,
               localizationsDelegates: const [
                 AppLocalizations.delegate,
                 GlobalMaterialLocalizations.delegate,
@@ -114,7 +116,7 @@ class _MyAppState extends State<MyApp> {
                     ColorScheme.fromSeed(seedColor: AppColors.btnColor),
                 useMaterial3: true,
               ),
-              initialRoute: splashScreen,
+              initialRoute: welcomeScreen,
               onGenerateRoute: MyRouter().generateRoute, // onGenerateRoute: MyRouter().generateRoute,
             );
           },
