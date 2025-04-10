@@ -43,8 +43,15 @@ void main() async {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  
 
   // This widget is the root of your application.
   @override
@@ -88,28 +95,28 @@ class MyApp extends StatelessWidget {
         child: Consumer<LanguageChangeController>(
           builder: (context, provider, child) {
             return MaterialApp(
-                title: 'NPLFLIX',
-                navigatorKey: navigatorKey,
-                localizationsDelegates: const [
-                  AppLocalizations.delegate,
-                  GlobalMaterialLocalizations.delegate,
-                  GlobalWidgetsLocalizations.delegate,
-                  GlobalCupertinoLocalizations.delegate,
-                ],
-                debugShowCheckedModeBanner: false,
-                locale: provider.appLocale,
-                supportedLocales: const [
-                  Locale('en'), // nepali
-                  Locale('ne'), // english
-                ],
-                theme: ThemeData(
-                  colorScheme:
-                      ColorScheme.fromSeed(seedColor: AppColors.btnColor),
-                  useMaterial3: true,
-                ),
-                initialRoute: splashScreen,
-                onGenerateRoute: MyRouter().generateRoute,// onGenerateRoute: MyRouter().generateRoute,
-                );
+              title: 'NPLFLIX',
+              navigatorKey: navigatorKey,
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              debugShowCheckedModeBanner: false,
+              locale: provider.appLocale,
+              supportedLocales: const [
+                Locale('en'), // nepali
+                Locale('ne'), // english
+              ],
+              theme: ThemeData(
+                colorScheme:
+                    ColorScheme.fromSeed(seedColor: AppColors.btnColor),
+                useMaterial3: true,
+              ),
+              initialRoute: splashScreen,
+              onGenerateRoute: MyRouter().generateRoute, // onGenerateRoute: MyRouter().generateRoute,
+            );
           },
         ));
   }

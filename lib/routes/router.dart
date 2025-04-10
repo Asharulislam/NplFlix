@@ -60,26 +60,63 @@ class MyRouter {
   }
 
   Route<dynamic> generateRoute(RouteSettings settings) {
+    // Debug what's coming in
+    debugPrint('Router received route: ${settings.name}');
+    debugPrint('Router received arguments: ${settings.arguments}');
+
     // Extract route name and arguments
     final name = settings.name;
     final args = settings.arguments;
-    
-    // Handle special deep link routes
-    if (name?.startsWith('/room') == true) {
-      // Check if arguments are provided directly
-      if (args != null && args is Map<String, dynamic>) {
-        return MaterialPageRoute(
-          builder: (context) => JoinRoom(map: args),
-        );
+
+    // Special case: Handle the malformed route that includes ROUTE at the end
+    // or any route starting with /room/ or /room
+    if (name != null &&
+        (name.contains('/room') ||
+            name.contains('/room/') ||
+            (name.startsWith('/room') && name.contains('ROUTE')))) {
+      debugPrint('Handling special room URL case: $name');
+
+      // Try to extract the room ID from the route name
+      Map<String, String> roomArgs = {};
+
+      // Check if there's a query parameter in the route name
+      if (name.contains('?id=')) {
+        // Extract the ID between ?id= and the next & or end of string
+        final idStartIndex = name.indexOf('?id=') + 4;
+        int idEndIndex = name.indexOf('&', idStartIndex);
+        if (idEndIndex == -1) {
+          // If no & is found, use the end of the string
+          // but first check if there's ROUTE at the end
+          if (name.contains('ROUTE')) {
+            idEndIndex = name.indexOf('ROUTE', idStartIndex);
+          } else {
+            idEndIndex = name.length;
+          }
+        }
+
+        // Extract the ID
+        if (idEndIndex > idStartIndex) {
+          final roomId = name.substring(idStartIndex, idEndIndex);
+          roomArgs = {'roomId': roomId};
+          debugPrint('Extracted room ID: $roomId');
+        }
       }
 
-      // If arguments aren't provided directly, try to extract from the path
-      final uri = Uri.parse(name ?? '');
-      final roomId = uri.queryParameters['id'];
+      // If arguments were provided directly, use those instead
+      if (args != null && args is Map) {
+        roomArgs = Map<String, String>.from(args);
+      }
 
-      if (roomId != null) {
+      // If we have a room ID, proceed to the JoinRoom screen
+      if (roomArgs.isNotEmpty) {
+        final args = settings.arguments as Map;
         return MaterialPageRoute(
-          builder: (context) => JoinRoom(map: {'roomId': roomId}),
+          builder: (context) => getRouterWithScaleFactor(
+              context,
+              JoinRoom(
+                map: args,
+              )),
+          settings: RouteSettings(arguments: settings.arguments),
         );
       }
     }
