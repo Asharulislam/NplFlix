@@ -725,10 +725,11 @@ class _VideoPlayerScreen02State extends State<VideoPlayerScreen02> {
             IconButton(
               icon: const Icon(Icons.close, color: Colors.white, size: 30),
               onPressed: () async {
-                await SystemChrome.setPreferredOrientations([
-                  DeviceOrientation.portraitUp, // Force portrait before exiting
-                  DeviceOrientation.portraitDown,
-                ]);
+                // await SystemChrome.setPreferredOrientations([
+                //   DeviceOrientation.portraitUp, // Force portrait before exiting
+                //   DeviceOrientation.portraitDown,
+                // ]);
+                dispose();
                 Navigator.pop(context); // Close the screen
               },
             ),
@@ -780,7 +781,6 @@ class _VideoPlayerScreen02State extends State<VideoPlayerScreen02> {
   @override
   void dispose() {
     _videoPlayerController.removeListener(_subtitleSync);
-
     _chewieController?.dispose();
     _volumeSliderTimer?.cancel();
     _brightnessSliderTimer?.cancel();
