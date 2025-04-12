@@ -13,7 +13,7 @@ import '../../../controller/watch_time_controller.dart';
 
 class VideoPlayerAd extends StatefulWidget {
   final Map map;
-  VideoPlayerAd({super.key,required this.map});
+  VideoPlayerAd({super.key, required this.map});
 
   @override
   State<VideoPlayerAd> createState() => _VideoPlayerAdState();
@@ -28,8 +28,7 @@ class _VideoPlayerAdState extends State<VideoPlayerAd> {
   Timer? _materialControllesTimer;
   double _brightness = 0.5;
   double _volume = 0.5;
-  double _scale = 1.0;
-  double _initialScale = 1.0;
+  bool _isFitToScreen = false; // Add this new variable
 
   Timer? _volumeSliderTimer;
   Timer? _brightnessSliderTimer;
@@ -46,8 +45,8 @@ class _VideoPlayerAdState extends State<VideoPlayerAd> {
   bool _isLoadingAd = false;
   final List<int> _adTimePoints = [1, 60]; // Ad trigger points in seconds
   final List<String> _adVideoUrls = [
-    'http://nplflix-content.bizalpha.ca/ads/out/mercedes-1/1080.m3u8',  // Video ad for 1-second mark
-    'http://nplflix-content.bizalpha.ca/ads/out/pepsi-1/1080.m3u8'   // Video ad for 30-second mark
+    'http://nplflix-content.bizalpha.ca/ads/out/mercedes-1/1080.m3u8', // Video ad for 1-second mark
+    'http://nplflix-content.bizalpha.ca/ads/out/pepsi-1/1080.m3u8' // Video ad for 30-second mark
   ];
   VideoPlayerController? _adVideoController;
   int? _lastAdPlayedAtSecond;
@@ -101,7 +100,6 @@ class _VideoPlayerAdState extends State<VideoPlayerAd> {
           mounted &&
           _videoPlayerController.value.isInitialized &&
           _videoPlayerController.value.isPlaying) {
-
         // Mark that we've attempted to show the first ad
         firstAdAttempted = true;
 
@@ -128,7 +126,6 @@ class _VideoPlayerAdState extends State<VideoPlayerAd> {
       if (!firstAdAttempted &&
           mounted &&
           _videoPlayerController.value.isInitialized) {
-
         firstAdAttempted = true;
         _videoPlayerController.removeListener(firstAdListener);
 
@@ -288,7 +285,7 @@ class _VideoPlayerAdState extends State<VideoPlayerAd> {
                         SizedBox(height: 10),
                         Text("Slow network detected",
                             style:
-                            TextStyle(color: Colors.white70, fontSize: 12)),
+                                TextStyle(color: Colors.white70, fontSize: 12)),
                       ],
                     ),
                   ),
@@ -335,7 +332,7 @@ class _VideoPlayerAdState extends State<VideoPlayerAd> {
 
       // Show the ad
       final ValueNotifier<String> remainingTimeNotifier =
-      ValueNotifier<String>("00:00");
+          ValueNotifier<String>("00:00");
 
       showGeneralDialog(
         context: context,
@@ -392,16 +389,20 @@ class _VideoPlayerAdState extends State<VideoPlayerAd> {
                     top: 15,
                     left: 10,
                     child: IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white, size: 24),
+                      icon: const Icon(Icons.close,
+                          color: Colors.white, size: 24),
                       onPressed: () {
-
-                        _videoPlayerController.position.then((currentPosition) async {
-
+                        _videoPlayerController.position
+                            .then((currentPosition) async {
                           await SystemChrome.setPreferredOrientations([
-                            DeviceOrientation.portraitUp, // Force portrait before exiting
+                            DeviceOrientation
+                                .portraitUp, // Force portrait before exiting
                             DeviceOrientation.portraitDown,
                           ]);
-                          SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: SystemUiOverlay.values); // Show status & nav bars
+                          SystemChrome.setEnabledSystemUIMode(
+                              SystemUiMode.manual,
+                              overlays: SystemUiOverlay
+                                  .values); // Show status & nav bars
 
                           // Close ad dialog
                           Navigator.of(context).pop();
@@ -499,7 +500,7 @@ class _VideoPlayerAdState extends State<VideoPlayerAd> {
           int minutes = remainingSeconds ~/ 60;
           int seconds = remainingSeconds % 60;
           remainingTimeNotifier.value =
-          '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+              '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
         }
       });
 
@@ -767,13 +768,13 @@ class _VideoPlayerAdState extends State<VideoPlayerAd> {
   }
 
   Future<void> _initializePlayer() async {
-    _watchTimeController = Provider.of<WatchTimeController>(context, listen: false);
+    _watchTimeController =
+        Provider.of<WatchTimeController>(context, listen: false);
     var key = widget.map["keyPairId"];
     var policy = widget.map["policy"];
     var signature = widget.map["signature"];
     final String cookies =
         'CloudFront-Key-Pair-Id=$key; CloudFront-Policy=${policy}; CloudFront-Signature=${signature}';
-
 
     // Replace with your video URL or asset
     _videoPlayerController = VideoPlayerController.networkUrl(
@@ -821,7 +822,7 @@ class _VideoPlayerAdState extends State<VideoPlayerAd> {
     // Calculate the difference between current and previous position
     final currentPosition = _videoPlayerController.value.position;
     final difference =
-    (currentPosition - _previousPosition).inMilliseconds.abs();
+        (currentPosition - _previousPosition).inMilliseconds.abs();
 
     // If the position changed by more than 1 second and not by normal playback,
     // consider it a seek operation
@@ -857,8 +858,8 @@ class _VideoPlayerAdState extends State<VideoPlayerAd> {
       captionsJson.add({
         "isTrailler": widget.map['captions'][i].isTrailler,
         "languageId": widget.map['captions'][i].languageId,
-        "captionFileName":widget.map['captions'][i].captionFileName,
-        "captionFilePath":widget.map['captions'][i].captionFilePath,
+        "captionFileName": widget.map['captions'][i].captionFileName,
+        "captionFilePath": widget.map['captions'][i].captionFilePath,
       });
     }
 
@@ -1098,62 +1099,69 @@ class _VideoPlayerAdState extends State<VideoPlayerAd> {
     });
   }
 
+  // Add this method to toggle between aspect ratio and fill screen
+  void toggleFitToScreen() {
+    setState(() {
+      _isFitToScreen = !_isFitToScreen;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
       body: _videoPlayerController.value.isInitialized
           ? Stack(
-        children: [
-          // Custom video container with zoom that affects only the video
-          Center(
-            child: _buildZoomableVideoOnly(),
-          ),
-
-          // Screen locked indicator
-          if (_isScreenLocked)
-            Positioned(
-              top: 20,
-              right: 20,
-              child: GestureDetector(
-                onTap: toggleScreenLock,
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.black54,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Icon(
-                    Icons.lock,
-                    color: Colors.white,
-                    size: 24,
-                  ),
+              children: [
+                // Custom video container with zoom that affects only the video
+                Center(
+                  child: _buildZoomableVideoOnly(),
                 ),
-              ),
-            ),
-          //(hide when locked)
-          if (!_isScreenLocked && _chewieController != null)
-            _buildScreenSubtitlesAndScreenLockOverlay(),
 
-          //(hide when locked)
-          if (!_isScreenLocked && _chewieController != null)
-            _buildScreenBrightnessAndVolumeOverlay(),
-          //(hide when locked)
-          if (!_isScreenLocked && _chewieController != null)
-            _buildScreenVideoProgressOverlay(),
+                // Screen locked indicator
+                if (_isScreenLocked)
+                  Positioned(
+                    top: 20,
+                    right: 20,
+                    child: GestureDetector(
+                      onTap: toggleScreenLock,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.black54,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Icon(
+                          Icons.lock,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                    ),
+                  ),
+                //(hide when locked)
+                if (!_isScreenLocked && _chewieController != null)
+                  _buildScreenSubtitlesAndScreenLockOverlay(),
 
-          // Subtitles overlay
-          if (_subtitlesEnabled) _buildSubtitlesOverlay(),
+                //(hide when locked)
+                if (!_isScreenLocked && _chewieController != null)
+                  _buildScreenBrightnessAndVolumeOverlay(),
+                //(hide when locked)
+                if (!_isScreenLocked && _chewieController != null)
+                  _buildScreenVideoProgressOverlay(),
 
-          // Buffering indicator
-          if (_isBuffering && !_isAdPlaying)
-            const Center(
-              child: CircularProgressIndicator(
-                color: Colors.white,
-              ),
-            ),
-        ],
-      )
+                // Subtitles overlay
+                if (_subtitlesEnabled) _buildSubtitlesOverlay(),
+
+                // Buffering indicator
+                if (_isBuffering && !_isAdPlaying)
+                  const Center(
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                    ),
+                  ),
+              ],
+            )
           : const Center(child: CircularProgressIndicator()),
     );
   }
@@ -1229,27 +1237,11 @@ class _VideoPlayerAdState extends State<VideoPlayerAd> {
     );
   }
 
+// Then modify your _buildZoomableVideoOnly() method:
   Widget _buildZoomableVideoOnly() {
-    // Get the original aspect ratio
-    final aspectRatio = _videoPlayerController.value.aspectRatio;
+    final videoAspectRatio = _videoPlayerController.value.aspectRatio;
 
     return GestureDetector(
-      // Only detect scale gestures (pinch to zoom)
-      onScaleStart: !_isScreenLocked
-          ? (ScaleStartDetails details) {
-        // Store initial scale when gesture starts
-        _initialScale = _scale;
-      }
-          : null,
-      onScaleUpdate: !_isScreenLocked
-          ? (ScaleUpdateDetails details) {
-        setState(() {
-          // Update scale based on gesture, starting from initial scale
-          _scale = (_initialScale * details.scale).clamp(1.0, 1.4);
-        });
-      }
-          : null,
-      // Detect tap to show/hide controls, but don't affect zoom
       onTap: () {
         if (!_isScreenLocked) {
           _resetSliderAndButtonsVisiblity();
@@ -1258,31 +1250,37 @@ class _VideoPlayerAdState extends State<VideoPlayerAd> {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Black background container to maintain proper sizing
-          AspectRatio(
-            aspectRatio: aspectRatio,
-            child: Container(color: Colors.black),
+          // Video container with proper aspect ratio or fit to screen
+          Center(
+            child: _isFitToScreen
+                ? SizedBox.expand(
+                    // This will expand to fill the available space
+                    child: FittedBox(
+                      fit: BoxFit
+                          .cover, // This makes the video cover the entire space
+                      child: SizedBox(
+                        width: MediaQuery.of(context).size.width,
+                        height: MediaQuery.of(context).size.width /
+                            videoAspectRatio,
+                        child: VideoPlayer(_videoPlayerController),
+                      ),
+                    ),
+                  )
+                : AspectRatio(
+                    // Original aspect ratio
+                    aspectRatio: videoAspectRatio,
+                    child: ClipRect(
+                      child: VideoPlayer(_videoPlayerController),
+                    ),
+                  ),
           ),
 
-          // Zoomable video layer
-          ClipRect(
-            child: Transform.scale(
-              scale: _scale,
-              child: SizedBox(
-                width: MediaQuery.of(context).size.width,
-                height: MediaQuery.of(context).size.width / aspectRatio,
-                child: VideoPlayer(_videoPlayerController),
-              ),
-            ),
-          ),
-
-          // Non-zoomable Chewie controls layer (invisible)
+          // Invisible controls layer
           Positioned.fill(
             child: IgnorePointer(
-              // This ignores pointer events so they go to the gesture detector
               ignoring: true,
               child: Opacity(
-                opacity: 0.0, // Make this invisible
+                opacity: 0.0,
                 child: Chewie(controller: _chewieController!),
               ),
             ),
@@ -1350,7 +1348,7 @@ class _VideoPlayerAdState extends State<VideoPlayerAd> {
                           inactiveTrackColor: Colors.white30,
                           trackHeight: 2.0,
                           thumbShape:
-                          RoundSliderThumbShape(enabledThumbRadius: 6.0),
+                              RoundSliderThumbShape(enabledThumbRadius: 6.0),
                         ),
                         child: Slider(
                           value: _brightness,
@@ -1368,8 +1366,8 @@ class _VideoPlayerAdState extends State<VideoPlayerAd> {
                       _volume == 0
                           ? Icons.volume_off
                           : _volume < 0.5
-                          ? Icons.volume_down
-                          : Icons.volume_up,
+                              ? Icons.volume_down
+                              : Icons.volume_up,
                       color: Colors.white,
                       size: 25,
                     ),
@@ -1383,7 +1381,7 @@ class _VideoPlayerAdState extends State<VideoPlayerAd> {
                           inactiveTrackColor: Colors.white30,
                           trackHeight: 2.0,
                           thumbShape:
-                          RoundSliderThumbShape(enabledThumbRadius: 6.0),
+                              RoundSliderThumbShape(enabledThumbRadius: 6.0),
                         ),
                         child: Slider(
                           value: _volume,
@@ -1469,8 +1467,6 @@ class _VideoPlayerAdState extends State<VideoPlayerAd> {
             IconButton(
               icon: const Icon(Icons.close, color: Colors.white, size: 30),
               onPressed: () async {
-
-
                 _videoPlayerController.position.then((currentPosition) async {
                   if (currentPosition != null) {
                     await _watchTimeController.addWatchTime(
@@ -1481,10 +1477,13 @@ class _VideoPlayerAdState extends State<VideoPlayerAd> {
                   }
                   _videoPlayerController.dispose();
                   await SystemChrome.setPreferredOrientations([
-                    DeviceOrientation.portraitUp, // Force portrait before exiting
+                    DeviceOrientation
+                        .portraitUp, // Force portrait before exiting
                     DeviceOrientation.portraitDown,
                   ]);
-                  SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: SystemUiOverlay.values); // Show status & nav bars
+                  SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,
+                      overlays:
+                          SystemUiOverlay.values); // Show status & nav bars
 
                   super.dispose();
                   Navigator.pop(context);
@@ -1494,6 +1493,17 @@ class _VideoPlayerAdState extends State<VideoPlayerAd> {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
+                // Add the fit to screen button
+                IconButton(
+                  icon: Icon(
+                    _isFitToScreen ? Icons.fit_screen : Icons.aspect_ratio,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                  onPressed: () {
+                    toggleFitToScreen();
+                  },
+                ),
                 IconButton(
                   icon: Icon(
                     _subtitlesEnabled ? Icons.subtitles : Icons.subtitles_off,
