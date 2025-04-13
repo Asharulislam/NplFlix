@@ -32,7 +32,9 @@ class _VideoPlayerAdState extends State<VideoPlayerAd> {
 
   Timer? _volumeSliderTimer;
   Timer? _brightnessSliderTimer;
-
+  // Add at the top of your state class
+  bool _isDisposing = false;
+  bool _isControllerDisposed = false;
   // Variables
   List<Caption> _captions = [];
   Caption? _selectedCaption;
@@ -1108,9 +1110,13 @@ class _VideoPlayerAdState extends State<VideoPlayerAd> {
 
   @override
   Widget build(BuildContext context) {
+    // Prevent building if we're disposing or controller is gone
+    if (_isDisposing || _isControllerDisposed) {
+      return Container(color: Colors.black);
+    }
     return Scaffold(
       backgroundColor: Colors.black,
-      body: _videoPlayerController.value.isInitialized
+      body: !_isControllerDisposed && _videoPlayerController.value.isInitialized
           ? Stack(
               children: [
                 // Custom video container with zoom that affects only the video
@@ -1239,10 +1245,32 @@ class _VideoPlayerAdState extends State<VideoPlayerAd> {
 
 // Then modify your _buildZoomableVideoOnly() method:
   Widget _buildZoomableVideoOnly() {
-    final videoAspectRatio = _videoPlayerController.value.aspectRatio;
+    // Safe early return if we're in cleanup mode or controller is gone
+    if (_isDisposing || _isControllerDisposed || !mounted) {
+      return Container(color: Colors.black);
+    }
+
+    // Check if controller is initialized
+    if (!_videoPlayerController.value.isInitialized) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    // Safely get aspect ratio with error handling
+    double videoAspectRatio;
+    try {
+      videoAspectRatio = _videoPlayerController.value.aspectRatio;
+    } catch (e) {
+      print("Error accessing aspect ratio: $e");
+      return Container(color: Colors.black);
+    }
 
     return GestureDetector(
       onTap: () {
+        // Skip if we're cleaning up
+        if (_isDisposing || _isControllerDisposed || !mounted) {
+          return;
+        }
+
         if (!_isScreenLocked) {
           _resetSliderAndButtonsVisiblity();
         }
@@ -1254,40 +1282,55 @@ class _VideoPlayerAdState extends State<VideoPlayerAd> {
           Center(
             child: _isFitToScreen
                 ? SizedBox.expand(
-                    // This will expand to fill the available space
                     child: FittedBox(
-                      fit: BoxFit
-                          .cover, // This makes the video cover the entire space
+                      fit: BoxFit.cover,
                       child: SizedBox(
                         width: MediaQuery.of(context).size.width,
                         height: MediaQuery.of(context).size.width /
                             videoAspectRatio,
-                        child: VideoPlayer(_videoPlayerController),
+                        child: _buildVideoPlayerWithSafetyCheck(),
                       ),
                     ),
                   )
                 : AspectRatio(
-                    // Original aspect ratio
                     aspectRatio: videoAspectRatio,
                     child: ClipRect(
-                      child: VideoPlayer(_videoPlayerController),
+                      child: _buildVideoPlayerWithSafetyCheck(),
                     ),
                   ),
           ),
 
-          // Invisible controls layer
-          Positioned.fill(
-            child: IgnorePointer(
-              ignoring: true,
-              child: Opacity(
-                opacity: 0.0,
-                child: Chewie(controller: _chewieController!),
+          // Invisible controls layer - only if controller exists and isn't disposed
+          if (!_isDisposing &&
+              !_isControllerDisposed &&
+              _chewieController != null)
+            Positioned.fill(
+              child: IgnorePointer(
+                ignoring: true,
+                child: Opacity(
+                  opacity: 0.0,
+                  child: Chewie(controller: _chewieController!),
+                ),
               ),
             ),
-          ),
         ],
       ),
     );
+  }
+
+  // Helper method for safer VideoPlayer widget creation
+  Widget _buildVideoPlayerWithSafetyCheck() {
+    if (_isDisposing || _isControllerDisposed || !mounted) {
+      return Container(color: Colors.black);
+    }
+
+    try {
+      return VideoPlayer(_videoPlayerController);
+    } catch (e) {
+      print("Error creating VideoPlayer: $e");
+      _isControllerDisposed = true;
+      return Container(color: Colors.black);
+    }
   }
 
   Widget _buildSubtitlesOverlay() {
@@ -1467,27 +1510,90 @@ class _VideoPlayerAdState extends State<VideoPlayerAd> {
             IconButton(
               icon: const Icon(Icons.close, color: Colors.white, size: 30),
               onPressed: () async {
-                _videoPlayerController.position.then((currentPosition) async {
-                  if (currentPosition != null) {
-                    await _watchTimeController.addWatchTime(
-                      widget.map["uuId"],
-                      widget.map["contentId"],
-                      currentPosition.inSeconds,
-                    );
-                  }
-                  _videoPlayerController.dispose();
-                  await SystemChrome.setPreferredOrientations([
-                    DeviceOrientation
-                        .portraitUp, // Force portrait before exiting
-                    DeviceOrientation.portraitDown,
-                  ]);
-                  SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,
-                      overlays:
-                          SystemUiOverlay.values); // Show status & nav bars
+                // Set flags to prevent UI updates
+                setState(() {
+                  _isDisposing = true;
+                });
 
-                  super.dispose();
+                // Pause playback immediately
+                try {
+                  if (!_isControllerDisposed) {
+                    _videoPlayerController.pause();
+                  }
+                } catch (e) {
+                  print("Error pausing video: $e");
+                  _isControllerDisposed = true;
+                }
+
+                // Cancel all timers first
+                _adCheckTimer?.cancel();
+                _adCountdownTimer?.cancel();
+                _materialControllesTimer?.cancel();
+                _volumeSliderTimer?.cancel();
+                _brightnessSliderTimer?.cancel();
+
+                // Try to save watch time if needed
+                if (!_isControllerDisposed) {
+                  try {
+                    final currentPosition =
+                        await _videoPlayerController.position;
+                    if (currentPosition != null) {
+                      await _watchTimeController.addWatchTime(
+                        widget.map["uuId"],
+                        widget.map["contentId"],
+                        currentPosition.inSeconds,
+                      );
+                    }
+                  } catch (e) {
+                    print("Error saving watch time: $e");
+                  }
+                }
+
+                // Clean up ad controller if exists
+                if (_adVideoController != null) {
+                  _cleanupAdController();
+                }
+
+                // Remove listeners and dispose main controller
+                if (!_isControllerDisposed) {
+                  try {
+                    _videoPlayerController.removeListener(_subtitleSync);
+                    _videoPlayerController.removeListener(_updatePosition);
+                    _videoPlayerController.removeListener(_detectSeek);
+                  } catch (e) {
+                    print("Error removing listeners: $e");
+                  }
+
+                  try {
+                    _chewieController?.dispose();
+                  } catch (e) {
+                    print("Error disposing chewie controller: $e");
+                  }
+
+                  try {
+                    await _videoPlayerController.dispose();
+                    _isControllerDisposed = true;
+                  } catch (e) {
+                    print("Error disposing video controller: $e");
+                    _isControllerDisposed = true;
+                  }
+                }
+
+                // Reset device orientation and UI
+                await SystemChrome.setPreferredOrientations([
+                  DeviceOrientation.portraitUp,
+                  DeviceOrientation.portraitDown,
+                ]);
+
+                await SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,
+                    overlays: SystemUiOverlay.values);
+
+                await WakelockPlus.disable();
+
+                // Navigate only if still mounted
+                if (mounted) {
                   Navigator.pop(context);
-                }); // Close the screen
+                }
               },
             ),
             Row(
@@ -1537,18 +1643,60 @@ class _VideoPlayerAdState extends State<VideoPlayerAd> {
 
   @override
   void dispose() {
-    _videoPlayerController.removeListener(_subtitleSync);
-    _videoPlayerController.dispose();
-    _chewieController?.dispose();
+    print("VideoPlayerAd dispose called");
+    _isDisposing = true;
+
+    // Cancel all timers
+    _adCheckTimer?.cancel();
+    _adCountdownTimer?.cancel();
+    _materialControllesTimer?.cancel();
     _volumeSliderTimer?.cancel();
     _brightnessSliderTimer?.cancel();
 
-    _videoPlayerController.removeListener(_subtitleSync);
-    _videoPlayerController.removeListener(_detectSeek); // Remove seek listener
+    // Clean up ad controller
+    if (_adVideoController != null) {
+      _cleanupAdController();
+    }
 
-    // Clean up ad controller if it exists
-    _cleanupAdController();
+    // Only try to clean up controller if not already disposed
+    if (!_isControllerDisposed) {
+      try {
+        _videoPlayerController.removeListener(_subtitleSync);
+        _videoPlayerController.removeListener(_updatePosition);
+        _videoPlayerController.removeListener(_detectSeek);
+      } catch (e) {
+        print("Error removing listeners: $e");
+      }
+
+      try {
+        if (_chewieController != null) {
+          _chewieController!.dispose();
+        }
+      } catch (e) {
+        print("Error disposing chewie controller: $e");
+      }
+
+      try {
+        _videoPlayerController.pause();
+        _videoPlayerController.dispose();
+        _isControllerDisposed = true;
+      } catch (e) {
+        print("Error disposing video controller: $e");
+        _isControllerDisposed = true;
+      }
+    }
+
+    // Reset screen settings
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,
+        overlays: SystemUiOverlay.values);
+
     WakelockPlus.disable();
+
     super.dispose();
   }
 }
