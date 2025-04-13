@@ -34,11 +34,22 @@
             </intent-filter>
             
             <meta-data android:name="flutter_deeplinking_enabled" android:value="true" />
+            
+            <!-- App Links (verified links) -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" android:host="nplflix-web-v1-3.bizalpha.ca"/> 
+                <data android:scheme="https" android:host="nplflix-web-v1-3.bizalpha.ca" android:pathPrefix="/room" /> 
+                <data android:scheme="http" android:host="nplflix-web-v1-3.bizalpha.ca" android:pathPrefix="/room" />
+            </intent-filter>
+            
+            <!-- Custom scheme as fallback -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="nplflix" android:host="room" />
             </intent-filter>
 
         </activity>
@@ -53,6 +64,11 @@
         <meta-data
             android:name="com.google.firebase.analytics.enabled"
             android:value="true"/>
+            
+        <!-- Add this for Android 12+ -->
+        <meta-data
+            android:name="android.app.links.validation_failure_handling"
+            android:value="appDefault" />
 
     </application>
     <!-- Required to query activities that can process text, see:
@@ -68,6 +84,17 @@
         <intent>
             <action android:name="android.intent.action.SEND" />
             <category android:name="android.intent.category.DEFAULT" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="https" />
+        </intent>
+        <!-- Add this for your specific domain visibility on Android 11+ -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="https" android:host="nplflix-web-v1-3.bizalpha.ca" />
         </intent>
     </queries>
 </manifest>
