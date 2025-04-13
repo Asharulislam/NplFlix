@@ -14,7 +14,7 @@ import '../../../controller/watch_time_controller.dart';
 
 class VideoPlayerScreen02 extends StatefulWidget {
   final Map map;
-  VideoPlayerScreen02({super.key,required this.map});
+  VideoPlayerScreen02({super.key, required this.map});
 
   @override
   State<VideoPlayerScreen02> createState() => _VideoPlayerScreen02State();
@@ -30,9 +30,10 @@ class _VideoPlayerScreen02State extends State<VideoPlayerScreen02> {
   double _brightness = 0.5;
   double _volume = 0.5;
 
-
   Timer? _volumeSliderTimer;
   Timer? _brightnessSliderTimer;
+  // Add this to your state class
+  bool _isDisposing = false;
 
   // Variables
   List<Caption> _captions = [];
@@ -77,13 +78,13 @@ class _VideoPlayerScreen02State extends State<VideoPlayerScreen02> {
   }
 
   Future<void> _initializePlayer() async {
-    _watchTimeController = Provider.of<WatchTimeController>(context, listen: false);
+    _watchTimeController =
+        Provider.of<WatchTimeController>(context, listen: false);
     var key = widget.map["keyPairId"];
     var policy = widget.map["policy"];
     var signature = widget.map["signature"];
     final String cookies =
         'CloudFront-Key-Pair-Id=$key; CloudFront-Policy=${policy}; CloudFront-Signature=${signature}';
-
 
     // Replace with your video URL or asset
     _videoPlayerController = VideoPlayerController.networkUrl(
@@ -108,7 +109,6 @@ class _VideoPlayerScreen02State extends State<VideoPlayerScreen02> {
   }
 
   void _updatePosition() {
-
     if (mounted && _videoPlayerController.value.isPlaying) {
       setState(() {
         // Just triggering a rebuild so the time display updates
@@ -124,8 +124,8 @@ class _VideoPlayerScreen02State extends State<VideoPlayerScreen02> {
       captionsJson.add({
         "isTrailler": widget.map['captions'][i].isTrailler,
         "languageId": widget.map['captions'][i].languageId,
-        "captionFileName":widget.map['captions'][i].captionFileName,
-        "captionFilePath":widget.map['captions'][i].captionFilePath,
+        "captionFileName": widget.map['captions'][i].captionFileName,
+        "captionFilePath": widget.map['captions'][i].captionFilePath,
       });
     }
 
@@ -374,52 +374,60 @@ class _VideoPlayerScreen02State extends State<VideoPlayerScreen02> {
 
   @override
   Widget build(BuildContext context) {
+
+     // Don't rebuild UI during disposal
+  if (_isDisposing) {
+    return Container(color: Colors.black);
+  }
+
+    
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: _videoPlayerController.value.isInitialized
           ? Stack(
-        children: [
-          // Custom video container with zoom that affects only the video
-          Center(
-            child: _buildZoomableVideoOnly(),
-          ),
-
-          // Screen locked indicator
-          if (_isScreenLocked)
-            Positioned(
-              top: 20,
-              right: 20,
-              child: GestureDetector(
-                onTap: toggleScreenLock,
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.black54,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Icon(
-                    Icons.lock,
-                    color: Colors.white,
-                    size: 24,
-                  ),
+              children: [
+                // Custom video container with zoom that affects only the video
+                Center(
+                  child: _buildZoomableVideoOnly(),
                 ),
-              ),
-            ),
-          //(hide when locked)
-          if (!_isScreenLocked && _chewieController != null)
-            _buildScreenSubtitlesAndScreenLockOverlay(),
 
-          //(hide when locked)
-          if (!_isScreenLocked && _chewieController != null)
-            _buildScreenBrightnessAndVolumeOverlay(),
-          //(hide when locked)
-          if (!_isScreenLocked && _chewieController != null)
-            _buildScreenVideoProgressOverlay(),
+                // Screen locked indicator
+                if (_isScreenLocked)
+                  Positioned(
+                    top: 20,
+                    right: 20,
+                    child: GestureDetector(
+                      onTap: toggleScreenLock,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.black54,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Icon(
+                          Icons.lock,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                    ),
+                  ),
+                //(hide when locked)
+                if (!_isScreenLocked && _chewieController != null)
+                  _buildScreenSubtitlesAndScreenLockOverlay(),
 
-          // Subtitles overlay
-          if (_subtitlesEnabled) _buildSubtitlesOverlay(),
-        ],
-      )
+                //(hide when locked)
+                if (!_isScreenLocked && _chewieController != null)
+                  _buildScreenBrightnessAndVolumeOverlay(),
+                //(hide when locked)
+                if (!_isScreenLocked && _chewieController != null)
+                  _buildScreenVideoProgressOverlay(),
+
+                // Subtitles overlay
+                if (_subtitlesEnabled) _buildSubtitlesOverlay(),
+              ],
+            )
           : const Center(child: CircularProgressIndicator()),
     );
   }
@@ -495,12 +503,19 @@ class _VideoPlayerScreen02State extends State<VideoPlayerScreen02> {
     );
   }
 
-// Then modify your _buildZoomableVideoOnly() method:
   Widget _buildZoomableVideoOnly() {
+    // Safety check to prevent using disposed controller
+    if (!mounted || !_videoPlayerController.value.isInitialized) {
+      return Container(color: Colors.black);
+    }
+
     final videoAspectRatio = _videoPlayerController.value.aspectRatio;
 
     return GestureDetector(
       onTap: () {
+        // Safety check before using state
+        if (!mounted || !_videoPlayerController.value.isInitialized) return;
+
         if (!_isScreenLocked) {
           _resetSliderAndButtonsVisiblity();
         }
@@ -512,10 +527,8 @@ class _VideoPlayerScreen02State extends State<VideoPlayerScreen02> {
           Center(
             child: _isFitToScreen
                 ? SizedBox.expand(
-                    // This will expand to fill the available space
                     child: FittedBox(
-                      fit: BoxFit
-                          .cover, // This makes the video cover the entire space
+                      fit: BoxFit.cover,
                       child: SizedBox(
                         width: MediaQuery.of(context).size.width,
                         height: MediaQuery.of(context).size.width /
@@ -525,7 +538,6 @@ class _VideoPlayerScreen02State extends State<VideoPlayerScreen02> {
                     ),
                   )
                 : AspectRatio(
-                    // Original aspect ratio
                     aspectRatio: videoAspectRatio,
                     child: ClipRect(
                       child: VideoPlayer(_videoPlayerController),
@@ -533,16 +545,17 @@ class _VideoPlayerScreen02State extends State<VideoPlayerScreen02> {
                   ),
           ),
 
-          // Invisible controls layer
-          Positioned.fill(
-            child: IgnorePointer(
-              ignoring: true,
-              child: Opacity(
-                opacity: 0.0,
-                child: Chewie(controller: _chewieController!),
+          // Invisible controls layer - Only show if controller exists and not disposed
+          if (_chewieController != null)
+            Positioned.fill(
+              child: IgnorePointer(
+                ignoring: true,
+                child: Opacity(
+                  opacity: 0.0,
+                  child: Chewie(controller: _chewieController!),
+                ),
               ),
             ),
-          ),
         ],
       ),
     );
@@ -606,7 +619,7 @@ class _VideoPlayerScreen02State extends State<VideoPlayerScreen02> {
                           inactiveTrackColor: Colors.white30,
                           trackHeight: 2.0,
                           thumbShape:
-                          RoundSliderThumbShape(enabledThumbRadius: 6.0),
+                              RoundSliderThumbShape(enabledThumbRadius: 6.0),
                         ),
                         child: Slider(
                           value: _brightness,
@@ -624,8 +637,8 @@ class _VideoPlayerScreen02State extends State<VideoPlayerScreen02> {
                       _volume == 0
                           ? Icons.volume_off
                           : _volume < 0.5
-                          ? Icons.volume_down
-                          : Icons.volume_up,
+                              ? Icons.volume_down
+                              : Icons.volume_up,
                       color: Colors.white,
                       size: 25,
                     ),
@@ -639,7 +652,7 @@ class _VideoPlayerScreen02State extends State<VideoPlayerScreen02> {
                           inactiveTrackColor: Colors.white30,
                           trackHeight: 2.0,
                           thumbShape:
-                          RoundSliderThumbShape(enabledThumbRadius: 6.0),
+                              RoundSliderThumbShape(enabledThumbRadius: 6.0),
                         ),
                         child: Slider(
                           value: _volume,
@@ -712,7 +725,7 @@ class _VideoPlayerScreen02State extends State<VideoPlayerScreen02> {
     );
   }
 
-   Widget _buildScreenSubtitlesAndScreenLockOverlay() {
+  Widget _buildScreenSubtitlesAndScreenLockOverlay() {
     return Visibility(
       visible: _isMaterialControlles,
       child: Positioned(
@@ -725,12 +738,46 @@ class _VideoPlayerScreen02State extends State<VideoPlayerScreen02> {
             IconButton(
               icon: const Icon(Icons.close, color: Colors.white, size: 30),
               onPressed: () async {
-                // await SystemChrome.setPreferredOrientations([
-                //   DeviceOrientation.portraitUp, // Force portrait before exiting
-                //   DeviceOrientation.portraitDown,
-                // ]);
-                dispose();
-                Navigator.pop(context); // Close the screen
+                // Set flag to prevent further UI updates
+                setState(() {
+                  _isDisposing = true;
+                });
+
+                // Pause video immediately to stop sound
+                _videoPlayerController.pause();
+
+                // Cancel all timers to prevent them triggering UI updates
+                _materialControllesTimer?.cancel();
+                _volumeSliderTimer?.cancel();
+                _brightnessSliderTimer?.cancel();
+
+                // Remove all listeners to prevent callbacks during disposal
+                _videoPlayerController.removeListener(_subtitleSync);
+                _videoPlayerController.removeListener(_updatePosition);
+
+                // Dispose controllers
+                _chewieController?.dispose();
+                await _videoPlayerController.dispose();
+
+                // Reset orientation and UI
+                await SystemChrome.setPreferredOrientations([
+                  DeviceOrientation.portraitUp,
+                  DeviceOrientation.portraitDown,
+                ]);
+
+                await SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,
+                    overlays: SystemUiOverlay.values);
+
+                await WakelockPlus.disable();
+
+                // Navigate only if still mounted - use a try/catch to be extra safe
+                try {
+                  if (mounted) {
+                    Navigator.pop(context);
+                  }
+                } catch (e) {
+                  print("Error during navigation: $e");
+                }
               },
             ),
             Row(
@@ -778,22 +825,7 @@ class _VideoPlayerScreen02State extends State<VideoPlayerScreen02> {
     return "$minutes:$seconds";
   }
 
-  @override
-  void dispose() {
-    _videoPlayerController.removeListener(_subtitleSync);
-    _chewieController?.dispose();
-    _volumeSliderTimer?.cancel();
-    _brightnessSliderTimer?.cancel();
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp, // Force portrait before exiting
-      DeviceOrientation.portraitDown,
-    ]);
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: SystemUiOverlay.values); // Show status & nav bars
-    WakelockPlus.disable();
 
-    super.dispose();
-
-  }
 }
 
 // Simple caption model
